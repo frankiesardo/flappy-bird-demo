@@ -2,7 +2,6 @@
   (:require
    [om.core :as om :include-macros true]
    [sablono.core :as sab :include-macros true]
-   [figwheel.client :as fw]
    [cljs.core.async :refer [<! >! chan sliding-buffer put! take! close! timeout]])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
@@ -105,10 +104,12 @@
                                gap-spacing))) 4)]
   (assoc state :score (if (neg? score) 0 score))))
 
-(defn action-sys [{:keys [bird-vy] :as state}]
-  (if (pos? bird-vy)
-    (assoc state :bird-action :flapping)
-    (assoc state :bird-action :falling)))
+(defn action-sys [{:keys [bird-vy status bird-action] :as state}]
+  (cond-> state
+          (pos? bird-vy) (assoc :bird-action :flapping)
+          (neg? bird-vy) (assoc :bird-action :falling)
+          (= status :waiting) (assoc :bird-action :flapping)
+          (= status :dead) (assoc :bird-action :falling)))
 
 (defn tilting-sys [{:keys [bird-vy] :as state}]
   (let [angle (clamp -30 90 (* -2 bird-vy))]
@@ -249,9 +250,3 @@
 
 (om/root game-view game-state
   {:target (.getElementById js/document "board-area")})
-
-(fw/watch-and-reload  :jsload-callback (fn []
-                                         ;; you would add this if you
-                                         ;; have more than one file
-                                         #_(reset! game-state @game-state)
-                                         ))

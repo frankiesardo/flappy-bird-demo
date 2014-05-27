@@ -6,11 +6,9 @@
                  [org.clojure/clojurescript "0.0-2202"]
                  [org.clojure/core.async "0.1.278.0-76b25b-alpha"]
                  [om "0.5.0"]
-                 [sablono "0.2.16"]
-                 [figwheel "0.1.2-SNAPSHOT"]]
+                 [sablono "0.2.16"]]
 
-  :plugins [[lein-cljsbuild "1.0.3"]
-            [lein-figwheel "0.1.2-SNAPSHOT"]]
+  :plugins [[lein-cljsbuild "1.0.3"]]
 
   :source-paths ["src"]
 
@@ -21,6 +19,4 @@
                          :output-to "resources/public/js/flappy_bird_demo.js"
                          :output-dir "resources/public/js/out"
                          :optimizations :none
-                         :source-map true}}]}
-
-  :figwheel { :css-dirs ["resources/public/css"] })
+                         :source-map true}}]})
