@@ -19,12 +19,3 @@ goog.addDependency("iter/iter.js", ['goog.iter', 'goog.iter.Iterable', 'goog.ite
 goog.addDependency("structs/map.js", ['goog.structs.Map'], ['goog.iter.Iterator', 'goog.iter.StopIteration', 'goog.object']);
 goog.addDependency("uri/utils.js", ['goog.uri.utils', 'goog.uri.utils.ComponentIndex', 'goog.uri.utils.QueryArray', 'goog.uri.utils.QueryValue', 'goog.uri.utils.StandardQueryParam'], ['goog.asserts', 'goog.string', 'goog.userAgent']);
 goog.addDependency("uri/uri.js", ['goog.Uri', 'goog.Uri.QueryData'], ['goog.array', 'goog.string', 'goog.structs', 'goog.structs.Map', 'goog.uri.utils', 'goog.uri.utils.ComponentIndex', 'goog.uri.utils.StandardQueryParam']);
-goog.addDependency("promise/thenable.js", ['goog.Thenable'], []);
-goog.addDependency("debug/entrypointregistry.js", ['goog.debug.EntryPointMonitor', 'goog.debug.entryPointRegistry'], ['goog.asserts']);
-goog.addDependency("async/nexttick.js", ['goog.async.nextTick'], ['goog.debug.entryPointRegistry', 'goog.functions']);
-goog.addDependency("testing/watchers.js", ['goog.testing.watchers'], []);
-goog.addDependency("async/run.js", ['goog.async.run', 'goog.async.throwException'], ['goog.async.nextTick', 'goog.testing.watchers']);
-goog.addDependency("promise/resolver.js", ['goog.promise.Resolver'], []);
-goog.addDependency("promise/promise.js", ['goog.Promise'], ['goog.Thenable', 'goog.asserts', 'goog.async.run', 'goog.async.throwException', 'goog.debug.Error', 'goog.promise.Resolver']);
-goog.addDependency("mochikit/async/deferred.js", ['goog.async.Deferred', 'goog.async.Deferred.AlreadyCalledError', 'goog.async.Deferred.CanceledError'], ['goog.Promise', 'goog.Thenable', 'goog.array', 'goog.asserts', 'goog.debug.Error']);
-goog.addDependency("net/jsloader.js", ['goog.net.jsloader', 'goog.net.jsloader.Error', 'goog.net.jsloader.ErrorCode', 'goog.net.jsloader.Options'], ['goog.array', 'goog.async.Deferred', 'goog.debug.Error', 'goog.dom', 'goog.dom.TagName']);

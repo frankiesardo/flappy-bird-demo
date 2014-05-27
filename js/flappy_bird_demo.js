@@ -13,6 +13,6 @@ goog.addDependency("../sablono/util.js", ['sablono.util'], ['goog.Uri', 'cljs.co
 goog.addDependency("../sablono/interpreter.js", ['sablono.interpreter'], ['sablono.util', 'cljs.core', 'clojure.string']);
 goog.addDependency("../clojure/walk.js", ['clojure.walk'], ['cljs.core']);
 goog.addDependency("../sablono/core.js", ['sablono.core'], ['goog.dom', 'sablono.util', 'cljs.core', 'sablono.interpreter', 'clojure.string', 'clojure.walk']);
-goog.addDependency("../cljs/reader.js", ['cljs.reader'], ['goog.string', 'cljs.core']);
-goog.addDependency("../figwheel/client.js", ['figwheel.client'], ['goog.net.jsloader', 'cljs.core', 'cljs.core.async', 'clojure.string', 'cljs.reader']);
-goog.addDependency("../flappy_bird_demo/core.js", ['flappy_bird_demo.core'], ['cljs.core', 'cljs.core.async', 'sablono.core', 'figwheel.client']);
+goog.addDependency("../om/dom.js", ['om.dom'], ['cljs.core']);
+goog.addDependency("../om/core.js", ['om.core'], ['cljs.core', 'om.dom']);
+goog.addDependency("../flappy_bird_demo/core.js", ['flappy_bird_demo.core'], ['cljs.core', 'cljs.core.async', 'sablono.core', 'om.core']);

@@ -1,8 +1,8 @@
 (ns flappy-bird-demo.core
   (:require
+   [om.core :as om :include-macros true]
    [sablono.core :as sab :include-macros true]
-   [figwheel.client :as fw]
-   [cljs.core.async :refer [<! chan sliding-buffer put! close! timeout]])
+   [cljs.core.async :refer [<! >! chan sliding-buffer put! take! close! timeout]])
   (:require-macros
    [cljs.core.async.macros :refer [go-loop go]]))
 
@@ -104,10 +104,12 @@
                                gap-spacing))) 4)]
   (assoc state :score (if (neg? score) 0 score))))
 
-(defn action-sys [{:keys [bird-vy] :as state}]
-  (if (pos? bird-vy)
-    (assoc state :bird-action :flapping)
-    (assoc state :bird-action :falling)))
+(defn action-sys [{:keys [bird-vy status bird-action] :as state}]
+  (cond-> state
+          (pos? bird-vy) (assoc :bird-action :flapping)
+          (neg? bird-vy) (assoc :bird-action :falling)
+          (= status :waiting) (assoc :bird-action :flapping)
+          (= status :dead) (assoc :bird-action :falling)))
 
 (defn tilting-sys [{:keys [bird-vy] :as state}]
   (let [angle (clamp -30 90 (* -2 bird-vy))]
@@ -146,46 +148,57 @@
       :bird-vy (- bird-vy (* (- curr-time last-jump) gravity)))))
 
 (defn input-sys [input-fn]
-  (let [game-sys #(-> % input-fn
-                      waiting-sys
-                      gravity-sys
-                      jumping-sys
-                      moving-sys
-                      tilting-sys
-                      action-sys
-                      collision-sys
-                      scoring-sys
-                      creation-sys
-                      )]
-    (swap! game-state game-sys)))
+  (fn [state]
+    (-> state
+        input-fn
+        waiting-sys
+        gravity-sys
+        jumping-sys
+        moving-sys
+        tilting-sys
+        action-sys
+        collision-sys
+        scoring-sys
+        creation-sys)))
+
+;; Input
+
+(defn input-restart [app]
+  (om/update! app initial-state))
+
+(defn input-jump [app]
+  (let [jump-fn (fn [{:keys [status curr-time] :as state}]
+                  (cond-> state
+                    (= status :waiting) (assoc
+                                          :status :playing
+                                          :last-jump curr-time
+                                          :start-time curr-time)
+                    (= status :playing) (assoc
+                                          :last-jump curr-time)))
+        game-sys (input-sys jump-fn)]
+    (om/transact! app game-sys)))
+
+(defn input-time [app time]
+  (let [game-sys (input-sys #(assoc % :curr-time time))]
+    (om/transact! app game-sys)))
 
 ;; Rendering
 
-(defn time-loop [time]
-  (do
-    (input-sys #(assoc % :curr-time time))
+(defn time-loop []
+  (let [out (chan (sliding-buffer 1))]
     (go
-     (<! (timeout 30))
-     (.requestAnimationFrame js/window time-loop))))
-
-(defn jump []
-  (input-sys #(let [status (:status %)
-                    time (:curr-time %)]
-                (case status
-                  :waiting (assoc %
-                             :status :playing
-                             :last-jump time
-                             :start-time time)
-                  :playing (assoc %
-                             :last-jump time)
-                  %))))
-
-(defn restart-game []
-  (reset! game-state initial-state))
+     (loop []
+       (<! (timeout 30))
+       (.requestAnimationFrame js/window #(put! out %))
+       (recur)))
+    out))
 
 (defn px [n] (str n "px"))
 
-(defn render-bird [{:keys [bird-y bird-tilt bird-action]}]
+(defn render-border [border-x]
+  {:style { :background-position-x (px border-x)}})
+
+(defn render-bird [{:keys [bird-y bird-tilt bird-action] :as state}]
   {:style {:left (px bird-x)
            :top (px bird-y)
            :width (px bird-width)
@@ -207,40 +220,33 @@
                                         :height (px lower-pillar-y)
                                         :width (px gap-width)}}]]))
 
-(defn render-border [border-x]
-  {:style { :background-position-x (px border-x)}})
+(defn game-view [app owner]
+  (reify
+    om/IInitState
+    (init-state [_]
+      {:time-chan (time-loop)})
+    om/IDidMount
+    (did-mount [_]
+      (let [time-chan (om/get-state owner :time-chan)]
+        (go (loop []
+              (let [time (<! time-chan)]
+                (input-time app time)
+                (recur))))))
+    om/IRender
+    (render [_]
+      (let [{:keys [status score gaps border-x]} app]
+        (sab/html
+         [:div.board {:onMouseDown (fn [e]
+                                     (input-jump app)
+                                     (.preventDefault e))}
+          (if (= status :playing)
+            [:h1.score score ])
+          (if (= status :dead)
+            [:a.start-button {:onClick #(input-restart app)} "RESTART"]
+            [:span])
+          [:div.flappy (render-bird app)]
+          [:div (map render-gap gaps)]
+          [:div.scrolling-border (render-border border-x)]])))))
 
-(defn to-html [{:keys [status score gaps border-x] :as state}]
-  (sab/html [:div.board {:onMouseDown (fn [e]
-                                        (jump)
-                                        (.preventDefault e))}
-             (if (= status :playing)
-               [:h1.score score ])
-             (if (= status :dead)
-               [:a.start-button {:onClick restart-game} "RESTART"]
-               [:span])
-             [:div.flappy (render-bird state)]
-             [:div (map render-gap gaps)]
-             [:div.scrolling-border (render-border border-x)]]))
-
-(let [node (.getElementById js/document "board-area")]
-  (defn render [game-state]
-    (.renderComponent js/React (to-html game-state) node)))
-
-(add-watch game-state :renderer (fn [_ _ _ new-state]
-                                  (render new-state)))
-
-(defn start-game []
-  (.requestAnimationFrame
-   js/window
-   (fn [time]
-     (reset! game-state (assoc initial-state :start-time time))
-     (time-loop time))))
-
-(start-game)
-
-(fw/watch-and-reload  :jsload-callback (fn []
-                                         ;; you would add this if you
-                                         ;; have more than one file
-                                         #_(reset! game-state @game-state)
-                                         ))
+(om/root game-view game-state
+  {:target (.getElementById js/document "board-area")})
